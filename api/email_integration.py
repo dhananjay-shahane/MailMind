@@ -59,7 +59,26 @@ class EmailReceiver:
             # Get body
             body = self.extract_email_body(msg)
             
-            logger.info(f"New email received from {sender_email} with subject: {subject}")
+            # Skip delivery failure emails and system notifications
+            if (sender_email.lower().startswith('mailer-daemon') or 
+                sender_email.lower().startswith('postmaster') or 
+                'delivery status notification' in subject.lower() or
+                'undeliverable' in subject.lower()):
+                logger.info(f"Skipping delivery failure email from {sender_email}")
+                return True
+                
+            logger.info(f"📧 NEW EMAIL: From {sender_email} | Subject: {subject}")
+            
+            # Emit real-time notification via websocket
+            try:
+                from main import socketio
+                socketio.emit('new_email', {
+                    'from': sender_email,
+                    'subject': subject,
+                    'timestamp': datetime.now().isoformat()
+                })
+            except Exception as e:
+                logger.debug(f"Could not emit websocket event: {e}")
             
             # Extract question from body
             question = self.extract_question_from_body(body)
@@ -70,26 +89,36 @@ class EmailReceiver:
             # Get available functions for LLM analysis
             available_functions = self.function_registry.get_available_functions()
             
-            # Check Ollama availability periodically (every 5 minutes)
+            # Check Ollama availability periodically (every 10 minutes)
             current_time = time.time()
-            if current_time - self.last_ollama_check > 300:  # 5 minutes
+            if current_time - self.last_ollama_check > 600:  # 10 minutes
                 self.ollama_available = self.ollama_client.is_available()
                 self.last_ollama_check = current_time
                 if self.ollama_available:
-                    logger.info("Ollama service is available")
-                else:
-                    logger.info("Ollama service is not available - using offline analysis")
+                    logger.info("🤖 Ollama LLM service connected")
             
             # Use Ollama only if available
             if self.ollama_available:
                 function_name = self.ollama_client.identify_function(question, available_functions)
                 if function_name:
-                    logger.info(f"LLM analyzed content and identified function: {function_name}")
+                    logger.info(f"🎯 LLM identified function: {function_name}")
                 else:
-                    logger.info("LLM analyzed content - no specific function identified")
+                    logger.info("🔍 LLM analyzed - no specific function match")
             else:
-                # Skip LLM analysis when not available
-                logger.info(f"Email content logged (Ollama not available): {question[:100]}...")
+                # Just log the content without error messages
+                logger.info(f"📝 Email content: {question[:100]}...")
+            
+            # Emit analysis result via websocket
+            try:
+                from main import socketio
+                socketio.emit('email_processed', {
+                    'from': sender_email,
+                    'content_preview': question[:100] + '...' if len(question) > 100 else question,
+                    'function_identified': function_name if self.ollama_available and 'function_name' in locals() else None,
+                    'timestamp': datetime.now().isoformat()
+                })
+            except Exception as e:
+                logger.debug(f"Could not emit websocket event: {e}")
             
             # Log the email content for review (without auto-execution or auto-reply)
             logger.info(f"Email content analyzed: {question[:200]}...")
@@ -205,8 +234,8 @@ class EmailReceiver:
                 mail.close()
                 mail.logout()
                 
-                # Wait before checking again (reduced frequency)
-                time.sleep(120)  # Check every 2 minutes
+                # Wait before checking again
+                time.sleep(60)  # Check every 1 minute
                 
             except Exception as e:
                 logger.error(f"Error in email monitoring loop: {e}")

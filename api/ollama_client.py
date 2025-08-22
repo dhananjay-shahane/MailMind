@@ -17,10 +17,10 @@ class OllamaClient:
     def is_available(self) -> bool:
         """Check if Ollama service is available"""
         try:
-            response = requests.get(f"{self.base_url}/api/tags", timeout=5)
+            response = requests.get(f"{self.base_url}/api/tags", timeout=3)
             return response.status_code == 200
-        except Exception as e:
-            logger.warning(f"Ollama not available: {e}")
+        except Exception:
+            # Silently return False - no need to log every failure
             return False
     
     def generate_response(self, prompt: str) -> Optional[str]:

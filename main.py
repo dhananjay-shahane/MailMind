@@ -1,6 +1,7 @@
 import os
 import logging
 from flask import Flask
+from flask_socketio import SocketIO, emit
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -18,9 +19,10 @@ from api.email_integration import EmailReceiver
 from routes.main_routes import main_bp, init_routes
 from routes.api_routes import api_bp, init_api_routes
 
-# Create Flask app
+# Create Flask app with SocketIO
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key_for_development")
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize components
 email_processor = EmailProcessor()
@@ -51,6 +53,9 @@ execution_logs = []
 init_routes(function_registry, ollama_client, email_sender, execution_logs)
 init_api_routes(function_registry, ollama_client, email_sender, email_processor, execution_logs)
 
+# Store socketio reference globally for email notifications
+app.socketio = socketio
+
 # Register blueprints
 app.register_blueprint(main_bp)
 app.register_blueprint(api_bp)
@@ -66,4 +71,4 @@ except Exception as e:
 
 if __name__ == '__main__':
     logger.info("Starting Email-to-Function Execution System")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

@@ -123,13 +123,56 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
         feather.replace();
         
-        // Auto-refresh page every 30 seconds
-        setTimeout(() => {
-            location.reload();
-        }, 30000);
+        // Initialize Socket.IO for real-time updates
+        const socket = io();
+        
+        // Update LLM status indicator
+        const llmStatus = document.querySelector('.card-body .badge.bg-warning');
+        
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            if (llmStatus) llmStatus.textContent = 'Connected';
+        });
+        
+        socket.on('new_email', function(data) {
+            console.log('New email received:', data);
+            // Add notification or update UI
+            showNotification(`📧 New email from ${data.from}`, 'info');
+        });
+        
+        socket.on('email_processed', function(data) {
+            console.log('Email processed:', data);
+            if (data.function_identified) {
+                showNotification(`🎯 Function identified: ${data.function_identified}`, 'success');
+            } else {
+                showNotification(`📝 Email content analyzed`, 'secondary');
+            }
+        });
+        
+        function showNotification(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 5000);
+        }
+        
+        // Show connection status
+        showNotification('🔄 Real-time monitoring active', 'success');
     </script>
 </body>
 </html>
