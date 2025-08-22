@@ -61,43 +61,20 @@ class OllamaClient:
             for func in available_functions
         ])
         
-        prompt = f"""You are a business function dispatcher. Your job is to analyze user questions and select the most appropriate function to execute.
+        prompt = f"""Function Selector: Pick the exact function name for this request.
 
-Available business functions:
+Available Functions:
 {functions_text}
 
-User question: "{question}"
+Request: "{question}"
 
-Analyze the question and determine which function would best answer it. Consider these patterns:
+RULES:
+- "pie chart" or "pie" → generate_user_analytics_chart
+- "line chart" or "trend" or "sales" → generate_sales_chart
+- "bar chart" or "revenue" → generate_revenue_chart
+- "system" or "metrics" → generate_system_metrics_chart
 
-CHART & VISUALIZATION PATTERNS:
-- "pie chart", "pie", "analytics pie", "user distribution" → generate_user_analytics_chart
-- "line chart", "line", "sales trend", "sales chart", "trend" → generate_sales_chart  
-- "bar chart", "revenue comparison", "revenue chart" → generate_revenue_chart
-- "system metrics", "system chart", "performance chart" → generate_system_metrics_chart
-
-BUSINESS FUNCTION PATTERNS:
-- Keywords related to sales, revenue, money → sales functions
-- Keywords related to users, customers, accounts → user functions  
-- Keywords related to reports, analytics, traffic → analytics functions
-- Keywords related to server, system, health → system functions
-- Keywords related to profit, finance, cash → finance functions
-
-COMMON NATURAL LANGUAGE PATTERNS:
-- "I want [chart type]" → find matching chart function
-- "Show me [data type]" → find matching data/chart function  
-- "Give me [chart type] and [chart type]" → pick the first mentioned chart type
-- "Create [visualization type]" → find matching chart function
-
-When users ask for multiple chart types, prioritize in this order:
-1. Pie charts (user analytics)
-2. Line charts (sales trends) 
-3. Bar charts (revenue)
-4. System charts (metrics)
-
-Respond with ONLY the exact function name that matches best. If no function is appropriate, respond with "NONE".
-
-Function name:"""
+Answer with ONLY the function name:"""
         
         logger.info(f"Sending function identification request to LLM")
         
