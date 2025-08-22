@@ -24,8 +24,8 @@ class EmailSender:
             msg['To'] = to_email
             msg['Subject'] = f"Re: {original_subject}"
             
-            # Create response body
-            body = self._create_response_body(question, result, attachment_path)
+            # Create response body with username
+            body = self._create_response_body(to_email, question, result, attachment_path)
             msg.attach(MIMEText(body, 'plain'))
             
             # Add attachment if provided
@@ -68,14 +68,17 @@ class EmailSender:
             logger.error(f"Error sending email response: {e}")
             return False
     
-    def _create_response_body(self, question: str, result: str, attachment_path: str = None) -> str:
-        """Create formatted response email body"""
+    def _create_response_body(self, to_email: str, question: str, result: str, attachment_path: str = None) -> str:
+        """Create formatted response email body with username"""
         attachment_note = ""
         if attachment_path:
             chart_name = os.path.basename(attachment_path)
             attachment_note = f"\n📊 I've attached a chart ({chart_name}) that visualizes this data for you.\n"
         
-        return f"""Hello,
+        # Extract username from email
+        username = to_email.split('@')[0].replace('.', ' ').replace('_', ' ').title()
+        
+        return f"""Hello {username},
 
 Thank you for your question: "{question}"
 
