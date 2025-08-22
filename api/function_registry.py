@@ -98,7 +98,7 @@ class FunctionRegistry:
         """Check if a function is registered"""
         return function_name in self.functions
     
-    def execute_function(self, function_name: str, *args, **kwargs) -> Any:
+    def execute_function(self, function_name: str, question: str = None) -> Any:
         """Execute a registered function with safety measures"""
         if not self.function_exists(function_name):
             raise ValueError(f"Function '{function_name}' not found")
@@ -106,10 +106,21 @@ class FunctionRegistry:
         func = self.functions[function_name]
         
         try:
+            # Check function signature to determine if it expects parameters
+            sig = inspect.signature(func)
+            params = list(sig.parameters.keys())
+            
             # Execute with timeout
             with self.timeout(self.config.MAX_FUNCTION_EXECUTION_TIME):
-                logger.info(f"Executing function: {function_name} with args: {args}, kwargs: {kwargs}")
-                result = func(*args, **kwargs)
+                if params:
+                    # Function expects parameters, pass the question
+                    logger.info(f"Executing function: {function_name} with question: {question}")
+                    result = func(question)
+                else:
+                    # Function expects no parameters
+                    logger.info(f"Executing function: {function_name} with no parameters")
+                    result = func()
+                    
                 logger.info(f"Function {function_name} completed successfully")
                 return result
                 
