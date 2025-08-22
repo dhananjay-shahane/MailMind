@@ -107,8 +107,8 @@ def execute_function():
         return jsonify({"success": True, "result": result})
         
     except Exception as e:
-        question = data.get('question', '') if 'data' in locals() else ''
-        function_name = data.get('function_name') if 'data' in locals() else None
+        question = data.get('question', '') if 'data' in locals() and data else ''
+        function_name = data.get('function_name') if 'data' in locals() and data else None
         log_execution("api", question, function_name, None, False, str(e))
         return jsonify({"error": str(e)}), 500
 
