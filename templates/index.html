@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Email-to-Function System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- System Status -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i data-feather="activity" class="me-2"></i>
+                <h5 class="mb-0">System Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <i data-feather="server" class="text-success me-2"></i>
+                            <div>
+                                <div class="fw-bold">Server</div>
+                                <small class="text-success">Running</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <i data-feather="cpu" class="text-info me-2"></i>
+                            <div>
+                                <div class="fw-bold">Functions</div>
+                                <small class="text-muted">{{ functions|length }} registered</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <i data-feather="mail" class="text-warning me-2"></i>
+                            <div>
+                                <div class="fw-bold">Webhook</div>
+                                <small class="text-muted">POST /webhook/email</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center">
+                            <i data-feather="zap" class="text-primary me-2"></i>
+                            <div>
+                                <div class="fw-bold">Executions</div>
+                                <small class="text-muted">{{ recent_logs|length }} recent</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Function -->
+    {% if show_test %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i data-feather="play" class="me-2"></i>
+                <h5 class="mb-0">Test Function Execution</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('test_function') }}">
+                    <div class="mb-3">
+                        <label for="question" class="form-label">Enter a question:</label>
+                        <input type="text" class="form-control" id="question" name="question" 
+                               placeholder="e.g., What are the total sales for this month?" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="send" class="me-1"></i>Execute
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Available Functions -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i data-feather="layers" class="me-2"></i>
+                    <h5 class="mb-0">Available Functions</h5>
+                </div>
+                {% if not show_test %}
+                <a href="{{ url_for('test_function') }}" class="btn btn-sm btn-outline-primary">
+                    <i data-feather="play" class="me-1"></i>Test
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if functions %}
+                    <div class="row">
+                        {% for func in functions %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title d-flex align-items-center">
+                                        <i data-feather="code" class="me-2 text-primary"></i>
+                                        {{ func.name }}
+                                    </h6>
+                                    <p class="card-text small text-muted">{{ func.description }}</p>
+                                    <code class="small">{{ func.signature }}</code>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i data-feather="alert-circle" class="text-warning mb-2" style="width: 48px; height: 48px;"></i>
+                        <p class="text-muted">No functions registered</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i data-feather="clock" class="me-2"></i>
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <a href="{{ url_for('view_logs') }}" class="btn btn-sm btn-outline-secondary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_logs %}
+                    {% for log in recent_logs|reverse %}
+                    <div class="d-flex align-items-start mb-3">
+                        <i data-feather="{% if log.success %}check-circle{% else %}x-circle{% endif %}" 
+                           class="me-2 mt-1 {% if log.success %}text-success{% else %}text-danger{% endif %}"></i>
+                        <div class="flex-grow-1">
+                            <div class="small fw-bold">{{ log.function_name or 'Unknown' }}</div>
+                            <div class="small text-muted">{{ log.question[:50] }}{% if log.question|length > 50 %}...{% endif %}</div>
+                            <div class="small text-muted">{{ log.timestamp[:19] }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <i data-feather="inbox" class="text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Webhook Information -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i data-feather="link" class="me-2"></i>
+                <h5 class="mb-0">Webhook Integration</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Email Webhook URL:</h6>
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="{{ request.url_root }}webhook/email" readonly>
+                            <button class="btn btn-outline-secondary" onclick="copyToClipboard(this)" type="button">
+                                <i data-feather="copy"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Configure your email service to POST to this URL</small>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Expected JSON Format:</h6>
+                        <pre class="bg-dark p-2 rounded"><code>{
+  "from": "user@example.com",
+  "subject": "Question about sales",
+  "body": "What are the total sales?"
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyToClipboard(button) {
+    const input = button.parentElement.querySelector('input');
+    input.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const originalIcon = button.innerHTML;
+    button.innerHTML = '<i data-feather="check"></i>';
+    feather.replace();
+    
+    setTimeout(() => {
+        button.innerHTML = originalIcon;
+        feather.replace();
+    }, 2000);
+}
+</script>
+{% endblock %}
