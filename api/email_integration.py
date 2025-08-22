@@ -8,7 +8,7 @@ import email
 import logging
 import time
 import threading
-from datetime import datetime
+from datetime import datetime, date
 from email.header import decode_header
 from config.config import Config
 
@@ -23,6 +23,8 @@ class EmailReceiver:
         self.ollama_client = ollama_client
         self.email_sender = email_sender
         self.running = False
+        self.ollama_available = False
+        self.last_ollama_check = 0
         
     def connect_to_gmail(self):
         """Connect to Gmail IMAP server"""
@@ -68,12 +70,26 @@ class EmailReceiver:
             # Get available functions for LLM analysis
             available_functions = self.function_registry.get_available_functions()
             
-            # Use Ollama to analyze content (but don't execute automatically)
-            function_name = self.ollama_client.identify_function(question, available_functions)
-            if function_name:
-                logger.info(f"LLM analyzed content and identified potential function: {function_name}")
+            # Check Ollama availability periodically (every 5 minutes)
+            current_time = time.time()
+            if current_time - self.last_ollama_check > 300:  # 5 minutes
+                self.ollama_available = self.ollama_client.is_available()
+                self.last_ollama_check = current_time
+                if self.ollama_available:
+                    logger.info("Ollama service is available")
+                else:
+                    logger.info("Ollama service is not available - using offline analysis")
+            
+            # Use Ollama only if available
+            if self.ollama_available:
+                function_name = self.ollama_client.identify_function(question, available_functions)
+                if function_name:
+                    logger.info(f"LLM analyzed content and identified function: {function_name}")
+                else:
+                    logger.info("LLM analyzed content - no specific function identified")
             else:
-                logger.info("LLM analyzed content - no specific function identified")
+                # Skip LLM analysis when not available
+                logger.info(f"Email content logged (Ollama not available): {question[:100]}...")
             
             # Log the email content for review (without auto-execution or auto-reply)
             logger.info(f"Email content analyzed: {question[:200]}...")
@@ -163,8 +179,10 @@ class EmailReceiver:
                     time.sleep(30)  # Wait 30 seconds before retrying
                     continue
                 
-                # Search for unseen emails
-                status, messages = mail.search(None, 'UNSEEN')
+                # Search for unseen emails from today only
+                today = date.today().strftime('%d-%b-%Y')
+                search_criteria = f'(UNSEEN SINCE "{today}")'
+                status, messages = mail.search(None, search_criteria)
                 
                 if status == 'OK' and messages[0]:
                     email_ids = messages[0].split()
@@ -187,8 +205,8 @@ class EmailReceiver:
                 mail.close()
                 mail.logout()
                 
-                # Wait before checking again
-                time.sleep(30)  # Check every 30 seconds
+                # Wait before checking again (reduced frequency)
+                time.sleep(120)  # Check every 2 minutes
                 
             except Exception as e:
                 logger.error(f"Error in email monitoring loop: {e}")
