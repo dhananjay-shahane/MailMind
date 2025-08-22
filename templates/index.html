@@ -147,9 +147,11 @@
         socket.on('email_processed', function(data) {
             console.log('Email processed:', data);
             if (data.function_identified) {
-                showNotification(`🎯 Function identified: ${data.function_identified}`, 'success');
+                showNotification(`🎯 LLM identified function: ${data.function_identified}`, 'success');
+            } else if (data.llm_available) {
+                showNotification(`🔍 LLM analyzed - no function match`, 'warning');
             } else {
-                showNotification(`📝 Email content analyzed`, 'secondary');
+                showNotification(`📝 Email logged (LLM offline)`, 'secondary');
             }
         });
         

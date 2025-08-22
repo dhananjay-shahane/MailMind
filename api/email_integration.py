@@ -76,9 +76,9 @@ class EmailReceiver:
                     'from': sender_email,
                     'subject': subject,
                     'timestamp': datetime.now().isoformat()
-                })
+                }, broadcast=True)
             except Exception as e:
-                logger.debug(f"Could not emit websocket event: {e}")
+                pass  # Silently fail if websocket not available
             
             # Extract question from body
             question = self.extract_question_from_body(body)
@@ -89,13 +89,15 @@ class EmailReceiver:
             # Get available functions for LLM analysis
             available_functions = self.function_registry.get_available_functions()
             
-            # Check Ollama availability periodically (every 10 minutes)
+            # Check Ollama availability periodically (every 2 minutes)
             current_time = time.time()
-            if current_time - self.last_ollama_check > 600:  # 10 minutes
+            if current_time - self.last_ollama_check > 120:  # 2 minutes
                 self.ollama_available = self.ollama_client.is_available()
                 self.last_ollama_check = current_time
                 if self.ollama_available:
-                    logger.info("🤖 Ollama LLM service connected")
+                    logger.info("🤖 Ollama LLM (gemma2) connected and ready")
+                else:
+                    logger.info("📴 Ollama LLM not available - check if running on port 11434")
             
             # Use Ollama only if available
             if self.ollama_available:
@@ -111,14 +113,16 @@ class EmailReceiver:
             # Emit analysis result via websocket
             try:
                 from main import socketio
+                function_result = function_name if self.ollama_available and 'function_name' in locals() else None
                 socketio.emit('email_processed', {
                     'from': sender_email,
                     'content_preview': question[:100] + '...' if len(question) > 100 else question,
-                    'function_identified': function_name if self.ollama_available and 'function_name' in locals() else None,
+                    'function_identified': function_result,
+                    'llm_available': self.ollama_available,
                     'timestamp': datetime.now().isoformat()
-                })
+                }, broadcast=True)
             except Exception as e:
-                logger.debug(f"Could not emit websocket event: {e}")
+                pass  # Silently fail if websocket not available
             
             # Log the email content for review (without auto-execution or auto-reply)
             logger.info(f"Email content analyzed: {question[:200]}...")

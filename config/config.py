@@ -5,7 +5,7 @@ class Config:
     
     # Ollama configuration
     OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://127.0.0.1:11434')
-    OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
+    OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'gemma2')
     
     # Email configuration
     SMTP_HOST = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
