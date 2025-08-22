@@ -107,8 +107,9 @@ def execute_function():
         return jsonify({"success": True, "result": result})
         
     except Exception as e:
-        log_execution("api", question if 'question' in locals() else "", 
-                     function_name if 'function_name' in locals() else None, None, False, str(e))
+        question = data.get('question', '') if 'data' in locals() else ''
+        function_name = data.get('function_name') if 'data' in locals() else None
+        log_execution("api", question, function_name, None, False, str(e))
         return jsonify({"error": str(e)}), 500
 
 @app.route("/webhook/email", methods=["POST"])
