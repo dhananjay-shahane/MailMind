@@ -28,7 +28,8 @@ class EmailSender:
             # Send email if SMTP is configured
             if self.config.SMTP_USERNAME and self.config.SMTP_PASSWORD:
                 server = smtplib.SMTP(self.config.SMTP_HOST, self.config.SMTP_PORT)
-                server.starttls()
+                if self.config.SMTP_USE_TLS:
+                    server.starttls()
                 server.login(self.config.SMTP_USERNAME, self.config.SMTP_PASSWORD)
                 
                 text = msg.as_string()
@@ -88,7 +89,8 @@ Email-to-Function System
             
             if self.config.SMTP_USERNAME and self.config.SMTP_PASSWORD:
                 server = smtplib.SMTP(self.config.SMTP_HOST, self.config.SMTP_PORT)
-                server.starttls()
+                if self.config.SMTP_USE_TLS:
+                    server.starttls()
                 server.login(self.config.SMTP_USERNAME, self.config.SMTP_PASSWORD)
                 
                 text = msg.as_string()

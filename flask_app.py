@@ -8,6 +8,7 @@ from email_processor import EmailProcessor
 from function_registry import FunctionRegistry
 from ollama_client import OllamaClient
 from email_sender import EmailSender
+from email_integration import EmailReceiver
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,6 +23,9 @@ email_processor = EmailProcessor()
 function_registry = FunctionRegistry()
 ollama_client = OllamaClient()
 email_sender = EmailSender()
+
+# Initialize email receiver (will start monitoring in background)
+email_receiver = None
 
 # Register functions from all scripts
 script_modules = [
@@ -38,6 +42,14 @@ for module_name in script_modules:
         logger.info(f"Registered functions from {module_name}")
     except Exception as e:
         logger.error(f"Failed to register functions from {module_name}: {e}")
+
+# Initialize and start email receiver
+try:
+    email_receiver = EmailReceiver(function_registry, ollama_client, email_sender)
+    email_receiver.start_monitoring()
+    logger.info("Email receiver started successfully")
+except Exception as e:
+    logger.error(f"Failed to start email receiver: {e}")
 
 # Store execution logs
 execution_logs = []
@@ -261,8 +273,42 @@ def health_check():
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'functions_registered': len(function_registry.get_available_functions()),
-        'ollama_available': ollama_client.is_available()
+        'ollama_available': ollama_client.is_available(),
+        'email_receiver_running': email_receiver.running if email_receiver else False
     })
+
+@app.route('/start-email-monitoring', methods=['POST'])
+def start_email_monitoring():
+    """Manually start email monitoring"""
+    global email_receiver
+    try:
+        if not email_receiver:
+            email_receiver = EmailReceiver(function_registry, ollama_client, email_sender)
+        
+        if not email_receiver.running:
+            email_receiver.start_monitoring()
+            return jsonify({'success': True, 'message': 'Email monitoring started'})
+        else:
+            return jsonify({'success': False, 'message': 'Email monitoring already running'})
+            
+    except Exception as e:
+        logger.error(f"Failed to start email monitoring: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/stop-email-monitoring', methods=['POST'])
+def stop_email_monitoring():
+    """Manually stop email monitoring"""
+    global email_receiver
+    try:
+        if email_receiver and email_receiver.running:
+            email_receiver.stop_monitoring()
+            return jsonify({'success': True, 'message': 'Email monitoring stopped'})
+        else:
+            return jsonify({'success': False, 'message': 'Email monitoring not running'})
+            
+    except Exception as e:
+        logger.error(f"Failed to stop email monitoring: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     logger.info("Starting Email-to-Function Execution System with Flask")
