@@ -4,7 +4,7 @@ import logging
 import signal
 from contextlib import contextmanager
 from typing import Dict, List, Any, Callable, Optional
-from config import Config
+from config.config import Config
 
 logger = logging.getLogger(__name__)
 

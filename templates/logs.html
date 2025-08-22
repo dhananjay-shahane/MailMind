@@ -1,187 +1,112 @@
-{% extends "base.html" %}
-
-{% block title %}Execution Logs - Email-to-Function System{% endblock %}
-
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <i data-feather="activity" class="me-2"></i>
-                    <h5 class="mb-0">Execution Logs</h5>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshLogs()">
-                        <i data-feather="refresh-cw" class="me-1"></i>Refresh
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="clearLogs()">
-                        <i data-feather="trash-2" class="me-1"></i>Clear
-                    </button>
-                </div>
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execution Logs - Email-to-Function System</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i data-feather="mail"></i>
+                Email-to-Function System
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">
+                    <i data-feather="home"></i>
+                    Dashboard
+                </a>
             </div>
-            <div class="card-body">
-                {% if logs %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>From</th>
-                                    <th>Question</th>
-                                    <th>Function</th>
-                                    <th>Status</th>
-                                    <th>Result</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for log in logs|reverse %}
-                                <tr class="{% if not log.success %}table-danger{% endif %}">
-                                    <td>
-                                        <small>{{ log.timestamp[:19] }}</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary">{{ log.email_from }}</span>
-                                    </td>
-                                    <td>
-                                        <div class="text-truncate" style="max-width: 300px;" title="{{ log.question }}">
-                                            {{ log.question }}
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i data-feather="list"></i>
+                    Function Execution Logs
+                </h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i data-feather="clock"></i>
+                            Recent Executions ({{ logs|length }})
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                            <i data-feather="refresh-cw"></i>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {% if logs %}
+                            {% for log in logs %}
+                            <div class="card mb-3 {% if log.success %}border-success{% else %}border-danger{% endif %}">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="text-primary">{{ log.function_name or 'Unknown Function' }}</strong>
+                                            {% if log.success %}
+                                                <span class="badge bg-success ms-2">Success</span>
+                                            {% else %}
+                                                <span class="badge bg-danger ms-2">Error</span>
+                                            {% endif %}
                                         </div>
-                                    </td>
-                                    <td>
-                                        {% if log.function_name %}
-                                            <code>{{ log.function_name }}</code>
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if log.success %}
-                                            <span class="badge bg-success">
-                                                <i data-feather="check" style="width: 12px; height: 12px;"></i>
-                                                Success
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-danger">
-                                                <i data-feather="x" style="width: 12px; height: 12px;"></i>
-                                                Error
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if log.success and log.result %}
-                                            <button class="btn btn-sm btn-outline-info" 
-                                                    onclick="showResult('{{ log.result|replace("'", "\\'") }}')">
-                                                <i data-feather="eye" style="width: 12px; height: 12px;"></i>
-                                                View
-                                            </button>
-                                        {% elif log.error %}
-                                            <button class="btn btn-sm btn-outline-danger" 
-                                                    onclick="showError('{{ log.error|replace("'", "\\'") }}')">
-                                                <i data-feather="alert-triangle" style="width: 12px; height: 12px;"></i>
-                                                Error
-                                            </button>
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                        <small class="text-muted">{{ log.timestamp[:19] }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>From:</strong> {{ log.email_from }}<br>
+                                            <strong>Question:</strong><br>
+                                            <p class="text-info">{{ log.question }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            {% if log.success and log.result %}
+                                                <strong>Result:</strong><br>
+                                                <div class="bg-dark p-2 rounded small">
+                                                    <code class="text-success">{{ log.result }}</code>
+                                                </div>
+                                            {% elif log.error %}
+                                                <strong>Error:</strong><br>
+                                                <div class="bg-dark p-2 rounded small">
+                                                    <code class="text-danger">{{ log.error }}</code>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center p-5">
+                                <i data-feather="inbox" style="width: 48px; height: 48px;" class="text-muted"></i>
+                                <p class="text-muted mt-3">No function executions logged yet.</p>
+                                <p class="text-muted">Send an email to dhanushahane01@gmail.com to see executions here!</p>
+                            </div>
+                        {% endif %}
                     </div>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i data-feather="inbox" class="text-muted mb-3" style="width: 64px; height: 64px;"></i>
-                        <h6 class="text-muted">No execution logs available</h6>
-                        <p class="text-muted">Logs will appear here when functions are executed via email webhook</p>
-                    </div>
-                {% endif %}
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Result Modal -->
-<div class="modal fade" id="resultModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i data-feather="eye" class="me-2"></i>
-                    Function Result
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <pre class="bg-dark p-3 rounded" id="resultContent"></pre>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Error Modal -->
-<div class="modal fade" id="errorModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i data-feather="alert-triangle" class="me-2"></i>
-                    Error Details
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger" id="errorContent"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function showResult(result) {
-    document.getElementById('resultContent').textContent = result;
-    new bootstrap.Modal(document.getElementById('resultModal')).show();
-    feather.replace();
-}
-
-function showError(error) {
-    document.getElementById('errorContent').textContent = error;
-    new bootstrap.Modal(document.getElementById('errorModal')).show();
-    feather.replace();
-}
-
-function refreshLogs() {
-    location.reload();
-}
-
-function clearLogs() {
-    if (confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
-        fetch('/api/logs', { method: 'DELETE' })
-            .then(() => location.reload())
-            .catch(err => alert('Error clearing logs: ' + err));
-    }
-}
-
-// Auto-refresh every 30 seconds
-setInterval(() => {
-    const now = Date.now();
-    const lastRefresh = localStorage.getItem('lastLogsRefresh') || 0;
-    
-    if (now - lastRefresh > 30000) {
-        localStorage.setItem('lastLogsRefresh', now);
-        location.reload();
-    }
-}, 30000);
-
-localStorage.setItem('lastLogsRefresh', Date.now());
-</script>
-{% endblock %}
+    <script>
+        feather.replace();
+        
+        // Auto-refresh page every 30 seconds
+        setTimeout(() => {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>

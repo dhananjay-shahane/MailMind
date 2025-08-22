@@ -10,7 +10,7 @@ import time
 import threading
 from datetime import datetime
 from email.header import decode_header
-from config import Config
+from config.config import Config
 
 logger = logging.getLogger(__name__)
 
