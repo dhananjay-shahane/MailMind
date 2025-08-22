@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
@@ -44,21 +46,21 @@
                     </div>
                     <div class="card-body">
                         {% if functions %}
-                            <div class="row">
-                                {% for func in functions %}
-                                <div class="col-md-6 mb-3">
-                                    <div class="card bg-secondary">
-                                        <div class="card-body">
-                                            <h6 class="card-title text-info">{{ func.name }}</h6>
-                                            <p class="card-text small">{{ func.description }}</p>
-                                            <small class="text-muted">{{ func.signature }}</small>
-                                        </div>
+                        <div class="row">
+                            {% for func in functions %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card bg-secondary">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-white">{{ func.name }}</h6>
+                                        <p class="card-text small">{{ func.description }}</p>
+                                        <small class="text-muted">{{ func.signature }}</small>
                                     </div>
                                 </div>
-                                {% endfor %}
                             </div>
+                            {% endfor %}
+                        </div>
                         {% else %}
-                            <p class="text-muted">No functions registered.</p>
+                        <p class="text-muted">No functions registered.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -74,25 +76,25 @@
                     </div>
                     <div class="card-body">
                         {% if recent_logs %}
-                            {% for log in recent_logs %}
-                            <div class="mb-3 p-2 border-bottom">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <small class="text-muted">{{ log.timestamp[:19] }}</small>
-                                    {% if log.success %}
-                                        <span class="badge bg-success">Success</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Error</span>
-                                    {% endif %}
-                                </div>
-                                <strong class="text-primary">{{ log.function_name or 'Unknown' }}</strong>
-                                <br>
-                                <small>From: {{ log.email_from }}</small>
-                                <br>
-                                <small class="text-muted">{{ log.question[:50] }}...</small>
+                        {% for log in recent_logs %}
+                        <div class="mb-3 p-2 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <small class="text-muted">{{ log.timestamp[:19] }}</small>
+                                {% if log.success %}
+                                <span class="badge bg-success">Success</span>
+                                {% else %}
+                                <span class="badge bg-danger">Error</span>
+                                {% endif %}
                             </div>
-                            {% endfor %}
+                            <strong class="text-primary">{{ log.function_name or 'Unknown' }}</strong>
+                            <br>
+                            <small>From: {{ log.email_from }}</small>
+                            <br>
+                            <small class="text-muted">{{ log.question[:50] }}...</small>
+                        </div>
+                        {% endfor %}
                         {% else %}
-                            <p class="text-muted">No recent executions.</p>
+                        <p class="text-muted">No recent executions.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -125,10 +127,10 @@
 
     <script>
         feather.replace();
-        
+
         // Update LLM status indicator
         const llmStatus = document.querySelector('.card-body .badge.bg-warning');
-        
+
         // Simple polling for status updates instead of SocketIO
         function updateStatus() {
             fetch('/api/status')
@@ -147,11 +149,11 @@
                     }
                 });
         }
-        
+
         // Update status every 30 seconds
         setInterval(updateStatus, 30000);
         updateStatus(); // Initial update
-        
+
         function showNotification(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
@@ -161,7 +163,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             document.body.appendChild(toast);
-            
+
             // Auto-remove after 5 seconds
             setTimeout(() => {
                 if (toast.parentNode) {
@@ -169,14 +171,15 @@
                 }
             }, 5000);
         }
-        
+
         // Auto-refresh logs periodically (every 60 seconds)
         setInterval(() => {
             window.location.reload();
         }, 60000);
-        
+
         // Show connection status
         showNotification('🔄 System monitoring active', 'success');
     </script>
 </body>
+
 </html>

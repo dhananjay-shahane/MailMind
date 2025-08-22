@@ -1,0 +1,42 @@
+# Email-to-Function Execution System - Project Dependencies
+# This file lists all the packages used in this project
+
+# Core Framework Dependencies
+flask>=3.1.2                  # Main web framework
+flask-sqlalchemy>=3.1.1       # Database ORM
+flask-socketio>=5.5.1          # WebSocket support (optional)
+gunicorn>=23.0.0              # WSGI HTTP server for production
+
+# Web Framework Alternative
+fastapi>=0.116.1              # Alternative web framework
+uvicorn>=0.35.0               # ASGI server for FastAPI
+
+# Email Processing
+email-validator>=2.2.0        # Email address validation
+python-multipart>=0.0.20      # File upload support
+
+# HTTP and Networking
+requests>=2.32.5              # HTTP library for API calls
+httpx>=0.28.1                 # Async HTTP client
+aiofiles>=24.1.0              # Async file operations
+
+# Database
+psycopg2-binary>=2.9.10       # PostgreSQL adapter
+
+# Configuration
+python-dotenv>=1.1.1          # Environment variable loading
+
+# Chart Generation and Visualization
+matplotlib>=3.10.5            # Chart/graph generation
+pillow>=11.3.0                # Image processing
+numpy>=2.3.2                  # Numerical computing for charts
+
+# Templating
+jinja2>=3.1.6                 # Template engine for Flask
+
+# Date and Time
+python-dateutil>=2.9.0        # Date/time utilities
+
+# Installation Note:
+# All packages are managed through pyproject.toml
+# Use 'uv add package_name' to install new packages
