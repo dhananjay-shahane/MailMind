@@ -41,7 +41,7 @@ class EmailReceiver:
             return None
     
     def process_email(self, mail_data):
-        """Process a single email and execute appropriate function"""
+        """Process a single email - read content and analyze with LLM without auto-reply"""
         try:
             # Parse email
             msg = email.message_from_bytes(mail_data)
@@ -57,31 +57,27 @@ class EmailReceiver:
             # Get body
             body = self.extract_email_body(msg)
             
-            logger.info(f"Processing email from {sender_email} with subject: {subject}")
+            logger.info(f"New email received from {sender_email} with subject: {subject}")
             
             # Extract question from body
             question = self.extract_question_from_body(body)
             if not question:
-                logger.warning("Could not extract question from email body")
-                return False
+                logger.info(f"Email content processed - Body preview: {body[:100]}...")
+                return True
             
-            # Get available functions
+            # Get available functions for LLM analysis
             available_functions = self.function_registry.get_available_functions()
             
-            # Use Ollama to identify function
+            # Use Ollama to analyze content (but don't execute automatically)
             function_name = self.ollama_client.identify_function(question, available_functions)
-            if not function_name:
-                logger.warning("Could not identify appropriate function")
-                return False
+            if function_name:
+                logger.info(f"LLM analyzed content and identified potential function: {function_name}")
+            else:
+                logger.info("LLM analyzed content - no specific function identified")
             
-            # Execute function
-            result = self.function_registry.execute_function(function_name, question)
-            logger.info(f"Function {function_name} executed successfully")
+            # Log the email content for review (without auto-execution or auto-reply)
+            logger.info(f"Email content analyzed: {question[:200]}...")
             
-            # Send reply email
-            reply_sent = self.email_sender.send_response(sender_email, subject, question, result)
-            
-            logger.info(f"Email processing completed. Reply sent: {reply_sent}")
             return True
             
         except Exception as e:
