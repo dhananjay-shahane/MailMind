@@ -81,9 +81,9 @@ class EmailReceiver:
             # Get available functions for LLM analysis
             available_functions = self.function_registry.get_available_functions()
             
-            # Check Ollama availability periodically (every 2 minutes)
+            # Check Ollama availability less frequently (every 5 minutes)
             current_time = time.time()
-            if current_time - self.last_ollama_check > 120:  # 2 minutes
+            if current_time - self.last_ollama_check > 300:  # 5 minutes
                 self.ollama_available = self.ollama_client.is_available()
                 self.last_ollama_check = current_time
                 if self.ollama_available:
@@ -266,11 +266,11 @@ class EmailReceiver:
                 mail.logout()
                 
                 # Wait before checking again
-                time.sleep(60)  # Check every 1 minute
+                time.sleep(30)  # Check every 30 seconds for faster response
                 
             except Exception as e:
                 logger.error(f"Error in email monitoring loop: {e}")
-                time.sleep(60)  # Wait longer on error
+                time.sleep(30)  # Wait shorter on error for faster recovery
     
     def start_monitoring(self):
         """Start email monitoring in a separate thread"""

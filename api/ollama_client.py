@@ -61,35 +61,42 @@ class OllamaClient:
             for func in available_functions
         ])
         
-        prompt = f"""Function Selector: Pick the exact function name for this request.
+        prompt = f"""Question: "{question}"
 
-Available Functions:
+Available functions:
 {functions_text}
 
-Request: "{question}"
+Chart keywords: pie chart → generate_user_analytics_chart, line chart → generate_sales_chart, bar chart → generate_revenue_chart, system chart → generate_system_metrics_chart
+Sales keywords: monthly sales → calculate_monthly_sales, top products → get_top_products, sales growth → calculate_sales_growth  
+User keywords: total users → get_total_users, user activity → get_user_activity, demographics → get_user_demographics
+Analytics keywords: traffic report → generate_traffic_report, conversion rate → get_conversion_metrics, revenue analytics → get_revenue_analytics
+System keywords: server health → get_server_health, database metrics → get_database_metrics, application logs → get_application_logs
+Finance keywords: profit loss → calculate_profit_loss, cash flow → get_cash_flow, financial ratios → calculate_financial_ratios
 
-RULES:
-- "pie chart" or "pie" → generate_user_analytics_chart
-- "line chart" or "trend" or "sales" → generate_sales_chart
-- "bar chart" or "revenue" → generate_revenue_chart
-- "system" or "metrics" → generate_system_metrics_chart
-
-Answer with ONLY the function name:"""
+Answer with exact function name only:"""
         
         logger.info(f"Sending function identification request to LLM")
         
         response = self.generate_response(prompt)
+        
         if response:
-            # Clean up the response
-            function_name = response.strip().lower()
+            response = response.strip()
             
-            # Check if the response matches any available function
+            # First, try to find exact function names in the response
+            function_names = [func['name'] for func in available_functions]
+            for func_name in function_names:
+                if func_name in response:
+                    logger.info(f"✅ LLM identified function: {func_name}")
+                    return func_name
+            
+            # If no exact match, try lowercase matching
+            function_name = response.lower()
             for func in available_functions:
                 if func['name'].lower() == function_name:
                     logger.info(f"✅ LLM identified function: {func['name']}")
                     return func['name']
             
-            # Check for partial matches
+            # Try partial matches as last resort  
             for func in available_functions:
                 if function_name in func['name'].lower() or func['name'].lower() in function_name:
                     logger.info(f"✅ LLM identified function (partial match): {func['name']}")
@@ -100,6 +107,4 @@ Answer with ONLY the function name:"""
         else:
             logger.error("❌ LLM service failed to respond - check Ollama status")
             return None
-        
-        return None
     
