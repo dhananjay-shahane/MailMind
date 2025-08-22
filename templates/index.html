@@ -123,44 +123,34 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
         feather.replace();
-        
-        // Initialize Socket.IO for real-time updates
-        const socket = io();
         
         // Update LLM status indicator
         const llmStatus = document.querySelector('.card-body .badge.bg-warning');
         
-        socket.on('connect', function() {
-            console.log('Connected to server');
-            if (llmStatus) llmStatus.textContent = 'Connected';
-        });
+        // Simple polling for status updates instead of SocketIO
+        function updateStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (llmStatus) {
+                        llmStatus.textContent = data.ollama_available ? 'Online' : 'Offline';
+                        llmStatus.className = data.ollama_available ? 'badge bg-success' : 'badge bg-warning';
+                    }
+                })
+                .catch(err => {
+                    console.log('Status check failed:', err);
+                    if (llmStatus) {
+                        llmStatus.textContent = 'Checking...';
+                        llmStatus.className = 'badge bg-warning';
+                    }
+                });
+        }
         
-        socket.on('new_email', function(data) {
-            console.log('New email received:', data);
-            // Add notification or update UI
-            showNotification(`📧 New email from ${data.from}`, 'info');
-        });
-        
-        socket.on('email_processed', function(data) {
-            console.log('Email processed:', data);
-            if (data.function_identified && data.execution_success) {
-                showNotification(`✅ Function executed: ${data.function_identified}`, 'success');
-                if (data.execution_result) {
-                    showNotification(`📋 Result: ${data.execution_result}`, 'info');
-                }
-            } else if (data.function_identified && !data.execution_success) {
-                showNotification(`❌ Function failed: ${data.function_identified}`, 'danger');
-            } else if (data.function_identified) {
-                showNotification(`🎯 Function identified: ${data.function_identified}`, 'success');
-            } else if (data.llm_available) {
-                showNotification(`🔍 LLM analyzed - no function match`, 'warning');
-            } else {
-                showNotification(`📝 Email analyzed (using fallback)`, 'secondary');
-            }
-        });
+        // Update status every 30 seconds
+        setInterval(updateStatus, 30000);
+        updateStatus(); // Initial update
         
         function showNotification(message, type = 'info') {
             const toast = document.createElement('div');
@@ -180,8 +170,13 @@
             }, 5000);
         }
         
+        // Auto-refresh logs periodically (every 60 seconds)
+        setInterval(() => {
+            window.location.reload();
+        }, 60000);
+        
         // Show connection status
-        showNotification('🔄 Real-time monitoring active', 'success');
+        showNotification('🔄 System monitoring active', 'success');
     </script>
 </body>
 </html>

@@ -69,16 +69,8 @@ class EmailReceiver:
                 
             logger.info(f"📧 NEW EMAIL: From {sender_email} | Subject: {subject}")
             
-            # Emit real-time notification via websocket
-            try:
-                from main import socketio
-                socketio.emit('new_email', {
-                    'from': sender_email,
-                    'subject': subject,
-                    'timestamp': datetime.now().isoformat()
-                }, broadcast=True)
-            except Exception as e:
-                pass  # Silently fail if websocket not available
+            # Log email reception (no more websockets)
+            logger.info(f"📧 Email received and being processed...")
             
             # Extract question from body
             question = self.extract_question_from_body(body)
@@ -147,20 +139,13 @@ class EmailReceiver:
                 logger.info("🔍 No appropriate function identified for this email")
                 execution_result = "No appropriate function found for your query."
                 
-            # Emit real-time notification via websocket
-            try:
-                from main import socketio
-                socketio.emit('email_processed', {
-                    'from': sender_email,
-                    'content_preview': question[:100] + '...' if len(question) > 100 else question,
-                    'function_identified': function_name,
-                    'execution_result': str(execution_result)[:200] if execution_result else None,
-                    'execution_success': execution_success,
-                    'llm_available': self.ollama_available,
-                    'timestamp': datetime.now().isoformat()
-                }, broadcast=True)
-            except Exception as e:
-                pass  # Silently fail if websocket not available
+            # Log processing result (no more websockets)
+            if execution_success and function_name:
+                logger.info(f"✅ Email processed successfully: {function_name} executed")
+            elif function_name:
+                logger.info(f"❌ Email processing failed: {function_name} execution failed")
+            else:
+                logger.info(f"📝 Email analyzed but no function identified")
             
             return True
             
@@ -296,7 +281,7 @@ class EmailReceiver:
         """Log function execution for monitoring"""
         try:
             # Import the execution_logs from main module
-            from main import execution_logs
+            import main
             
             log_entry = {
                 'timestamp': datetime.now().isoformat(),
@@ -307,11 +292,11 @@ class EmailReceiver:
                 'success': success,
                 'error': str(error) if error else None
             }
-            execution_logs.append(log_entry)
+            main.execution_logs.append(log_entry)
             
             # Keep only last 100 logs
-            if len(execution_logs) > 100:
-                execution_logs.pop(0)
+            if len(main.execution_logs) > 100:
+                main.execution_logs.pop(0)
                 
         except Exception as e:
             # Silently fail if logging fails
