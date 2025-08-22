@@ -69,3 +69,5 @@ attached_assets/
 # Cache
 .cache/
 *.cache
+
+replit.md
