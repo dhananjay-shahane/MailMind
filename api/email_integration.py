@@ -87,7 +87,7 @@ class EmailReceiver:
                 self.ollama_available = self.ollama_client.is_available()
                 self.last_ollama_check = current_time
                 if self.ollama_available:
-                    logger.info("🤖 Ollama LLM (gemma2) connected and ready")
+                    logger.info(f"🤖 Ollama LLM ({self.config.OLLAMA_MODEL}) connected and ready")
                 else:
                     logger.info("📴 Ollama LLM not available - using fallback analysis")
             
