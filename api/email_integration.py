@@ -74,6 +74,7 @@ class EmailReceiver:
             
             # Extract question from body
             question = self.extract_question_from_body(body)
+            logger.info(f"🔍 Extracted question: '{question}' from email body: '{body[:200]}...'")
             if not question:
                 logger.info(f"Email content processed - Body preview: {body[:100]}...")
                 return True
@@ -97,7 +98,9 @@ class EmailReceiver:
             execution_success = False
             
             # Use Ollama or fallback analysis to identify function
+            logger.info(f"🤖 Sending to LLM: question='{question}', available_functions={len(available_functions)}")
             function_name = self.ollama_client.identify_function(question, available_functions)
+            logger.info(f"🎯 LLM returned function: '{function_name}'")
             
             if function_name:
                 logger.info(f"🎯 Function identified: {function_name}")

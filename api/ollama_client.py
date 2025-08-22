@@ -66,18 +66,21 @@ class OllamaClient:
 Available functions:
 {functions_text}
 
-Chart keywords: pie chart → generate_user_analytics_chart, line chart → generate_sales_chart, bar chart → generate_revenue_chart, system chart → generate_system_metrics_chart
-Sales keywords: monthly sales → calculate_monthly_sales, top products → get_top_products, sales growth → calculate_sales_growth  
-User keywords: total users → get_total_users, user activity → get_user_activity, demographics → get_user_demographics
-Analytics keywords: traffic report → generate_traffic_report, conversion rate → get_conversion_metrics, revenue analytics → get_revenue_analytics
-System keywords: server health → get_server_health, database metrics → get_database_metrics, application logs → get_application_logs
-Finance keywords: profit loss → calculate_profit_loss, cash flow → get_cash_flow, financial ratios → calculate_financial_ratios
+Keywords guide:
+"pie chart" -> generate_user_analytics_chart
+"line chart" -> generate_sales_chart
+"bar chart" -> generate_revenue_chart
+"sales growth" -> calculate_sales_growth
+"total users" -> get_total_users
+"traffic report" -> generate_traffic_report
 
-Answer with exact function name only:"""
+Choose the best matching function name:"""
         
         logger.info(f"Sending function identification request to LLM")
+        logger.info(f"🔍 LLM Prompt: {prompt[:300]}...")
         
         response = self.generate_response(prompt)
+        logger.info(f"🤖 LLM Raw Response: '{response}'")
         
         if response:
             response = response.strip()
