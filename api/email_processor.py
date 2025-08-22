@@ -38,56 +38,118 @@ class EmailProcessor:
         return body.strip()
     
     def extract_question(self, email_body):
-        """Extract the main question from email body"""
+        """Extract the main question from email body with improved content detection"""
         if not email_body:
+            logger.warning("Empty email body provided")
             return None
             
-        # Clean up the email body
+        # Clean up the email body more aggressively
         lines = email_body.strip().split('\n')
         cleaned_lines = []
         
+        # Skip email headers, signatures, and other artifacts
+        skip_patterns = [
+            r'^>.*',  # Quoted text
+            r'^On .* wrote:.*',  # Reply headers
+            r'^From:.*', r'^To:.*', r'^Subject:.*', r'^Date:.*',  # Email headers
+            r'.*sent from.*', r'.*sent via.*',  # Mobile signatures
+            r'^--.*', r'^___.*',  # Signature separators
+            r'^\s*$',  # Empty lines
+            r'.*unsubscribe.*', r'.*click here.*', r'.*privacy policy.*',  # Marketing content
+            r'.*view in browser.*', r'.*if you cannot read.*'  # HTML email artifacts
+        ]
+        
         for line in lines:
             line = line.strip()
-            # Skip common email artifacts
-            if line.startswith('>') or line.startswith('On ') or line.startswith('From:'):
+            if not line:
                 continue
-            if 'wrote:' in line or 'sent from' in line.lower():
-                continue
-            if line:
+                
+            # Check if line should be skipped
+            should_skip = False
+            for pattern in skip_patterns:
+                if re.match(pattern, line, re.IGNORECASE):
+                    should_skip = True
+                    break
+            
+            if not should_skip and len(line) > 3:  # Minimum meaningful length
                 cleaned_lines.append(line)
         
         if not cleaned_lines:
+            logger.warning("No meaningful content found in email after cleaning")
             return None
-            
-        # Join lines and look for question patterns
+        
+        # Join lines and clean up the text
         text = ' '.join(cleaned_lines)
         
-        # Look for explicit questions (containing question marks)
-        question_sentences = re.findall(r'[^.!?]*\?[^.!?]*', text)
-        if question_sentences:
-            # Return the first question found
-            return question_sentences[0].strip()
+        # Remove extra whitespace and normalize
+        text = re.sub(r'\s+', ' ', text).strip()
         
-        # If no explicit questions, look for imperative statements or requests
+        logger.info(f"📧 Cleaned email content: '{text[:150]}...'")
+        
+        # Look for explicit questions first (highest priority)
+        question_patterns = [
+            r'[^.!]*\?[^.!]*',  # Text ending with question mark
+            r'(?:what|how|when|where|why|which|who).*?(?:[.!?]|$)',  # Wh-questions
+        ]
+        
+        for pattern in question_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            if matches:
+                question = matches[0].strip()
+                if len(question) > 5:  # Meaningful question
+                    logger.info(f"🔍 Found explicit question: '{question}'")
+                    return question
+        
+        # Look for imperative requests and statements
         request_patterns = [
-            r'(?:please\s+)?(?:can you\s+)?(?:could you\s+)?(?:show me\s+)?(?:tell me\s+)?(?:get me\s+)?(?:find\s+)?(?:calculate\s+)?(.+)',
-            r'(?:i need\s+)?(?:i want\s+)?(?:i would like\s+)?(.+)',
-            r'(?:what is\s+)?(?:what are\s+)?(?:how much\s+)?(?:how many\s+)?(.+)'
+            r'(?:please\s+)?(?:can you\s+|could you\s+|would you\s+)?(?:show me\s+|tell me\s+|get me\s+|give me\s+|find\s+|calculate\s+|generate\s+|create\s+)(.+?)(?:[.!?]|$)',
+            r'(?:i need\s+|i want\s+|i would like\s+|i\'d like\s+)(.+?)(?:[.!?]|$)',
+            r'(?:what is\s+|what are\s+|how much\s+|how many\s+|show me\s+)(.+?)(?:[.!?]|$)',
+            r'(?:get\s+|show\s+|display\s+|provide\s+)(?:the\s+|my\s+)?(.+?)(?:[.!?]|$)'
         ]
         
         for pattern in request_patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                return match.group(0).strip()
+                request = match.group(0).strip()
+                if len(request) > 8:  # Meaningful request
+                    logger.info(f"🔍 Found request pattern: '{request}'")
+                    return request
         
-        # If all else fails, return the first meaningful sentence
-        sentences = re.split(r'[.!]', text)
+        # Look for business-related keywords that indicate intent
+        business_keywords = [
+            'users?', 'customers?', 'sales?', 'revenue', 'analytics?', 'metrics?', 
+            'traffic', 'conversion', 'growth', 'products?', 'chart', 'graph', 
+            'report', 'data', 'statistics?', 'numbers?', 'breakdown', 'total'
+        ]
+        
+        keyword_pattern = r'.*(?:' + '|'.join(business_keywords) + r').*'
+        sentences = re.split(r'[.!?]', text)
+        
         for sentence in sentences:
             sentence = sentence.strip()
-            if len(sentence) > 10:  # Meaningful length
+            if len(sentence) > 10 and re.search(keyword_pattern, sentence, re.IGNORECASE):
+                logger.info(f"🔍 Found business-related sentence: '{sentence}'")
                 return sentence
         
-        return text[:200] if text else None  # Fallback to truncated text
+        # Fallback: return the longest meaningful sentence
+        longest_sentence = ""
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) > len(longest_sentence) and len(sentence) > 15:
+                longest_sentence = sentence
+        
+        if longest_sentence:
+            logger.info(f"🔍 Using longest sentence: '{longest_sentence}'")
+            return longest_sentence
+        
+        # Final fallback: return truncated text if nothing else works
+        if len(text) > 10:
+            logger.warning(f"🔍 Using truncated text as fallback: '{text[:100]}'")
+            return text[:100] + "..." if len(text) > 100 else text
+        
+        logger.warning("No meaningful question or request found in email")
+        return None
     
     def is_valid_email_format(self, email_data):
         """Validate email data format"""
