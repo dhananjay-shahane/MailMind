@@ -1,0 +1,47 @@
+# Email-to-Function Execution System Setup Guide
+
+## Prerequisites
+1. Python 3.11 or higher
+2. Ollama installed locally
+3. Gmail account with app-specific password
+
+## Installation Steps
+
+1. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Start Ollama server:**
+   ```bash
+   ollama serve
+   ```
+
+3. **Download AI model:**
+   ```bash
+   ollama pull gemma2
+   ```
+
+4. **Configure environment variables:**
+   - Copy `.env.example` to `.env`
+   - Update email credentials and Ollama settings
+
+5. **Start the application:**
+   ```bash
+   uvicorn main:app --host 0.0.0.0 --port 5000 --reload
+   ```
+
+## Environment Variables Required
+
+- `EMAIL_USER`: Your Gmail address
+- `SMTP_PASSWORD`: Gmail app-specific password
+- `OLLAMA_BASE_URL`: http://127.0.0.1:11434
+- `OLLAMA_MODEL`: gemma2
+- `SESSION_SECRET`: Random secret key
+
+## Features
+- Email monitoring and processing
+- AI-powered function mapping
+- Real-time dashboard
+- Function execution system
+- Logging and monitoring
