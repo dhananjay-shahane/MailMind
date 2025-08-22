@@ -146,12 +146,19 @@
         
         socket.on('email_processed', function(data) {
             console.log('Email processed:', data);
-            if (data.function_identified) {
-                showNotification(`🎯 LLM identified function: ${data.function_identified}`, 'success');
+            if (data.function_identified && data.execution_success) {
+                showNotification(`✅ Function executed: ${data.function_identified}`, 'success');
+                if (data.execution_result) {
+                    showNotification(`📋 Result: ${data.execution_result}`, 'info');
+                }
+            } else if (data.function_identified && !data.execution_success) {
+                showNotification(`❌ Function failed: ${data.function_identified}`, 'danger');
+            } else if (data.function_identified) {
+                showNotification(`🎯 Function identified: ${data.function_identified}`, 'success');
             } else if (data.llm_available) {
                 showNotification(`🔍 LLM analyzed - no function match`, 'warning');
             } else {
-                showNotification(`📝 Email logged (LLM offline)`, 'secondary');
+                showNotification(`📝 Email analyzed (using fallback)`, 'secondary');
             }
         });
         

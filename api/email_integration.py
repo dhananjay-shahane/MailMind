@@ -97,35 +97,70 @@ class EmailReceiver:
                 if self.ollama_available:
                     logger.info("🤖 Ollama LLM (gemma2) connected and ready")
                 else:
-                    logger.info("📴 Ollama LLM not available - check if running on port 11434")
+                    logger.info("📴 Ollama LLM not available - using fallback analysis")
             
-            # Use Ollama only if available
-            if self.ollama_available:
-                function_name = self.ollama_client.identify_function(question, available_functions)
-                if function_name:
-                    logger.info(f"🎯 LLM identified function: {function_name}")
-                else:
-                    logger.info("🔍 LLM analyzed - no specific function match")
+            # Try to identify and execute function
+            function_name = None
+            execution_result = None
+            execution_success = False
+            
+            # Use Ollama or fallback analysis to identify function
+            function_name = self.ollama_client.identify_function(question, available_functions)
+            
+            if function_name:
+                logger.info(f"🎯 Function identified: {function_name}")
+                
+                # Execute the identified function
+                try:
+                    execution_result = self.function_registry.execute_function(function_name, question)
+                    execution_success = True
+                    logger.info(f"✅ Function executed successfully: {function_name}")
+                    
+                    # Log execution for monitoring
+                    self.log_execution(sender_email, question, function_name, execution_result, True)
+                    
+                    # Send email reply with results
+                    reply_sent = self.email_sender.send_response(
+                        sender_email, 
+                        subject, 
+                        question, 
+                        str(execution_result)
+                    )
+                    
+                    if reply_sent:
+                        logger.info(f"📤 Reply sent to {sender_email}")
+                    else:
+                        logger.info(f"📝 Reply prepared but SMTP not configured")
+                        
+                except Exception as e:
+                    execution_success = False
+                    error_msg = str(e)
+                    logger.error(f"❌ Function execution failed: {error_msg}")
+                    
+                    # Log failed execution
+                    self.log_execution(sender_email, question, function_name, None, False, error_msg)
+                    
+                    # Send error notification
+                    self.email_sender.send_error_notification(sender_email, subject, error_msg)
+                    
             else:
-                # Just log the content without error messages
-                logger.info(f"📝 Email content: {question[:100]}...")
-            
-            # Emit analysis result via websocket
+                logger.info("🔍 No appropriate function identified for this email")
+                execution_result = "No appropriate function found for your query."
+                
+            # Emit real-time notification via websocket
             try:
                 from main import socketio
-                function_result = function_name if self.ollama_available and 'function_name' in locals() else None
                 socketio.emit('email_processed', {
                     'from': sender_email,
                     'content_preview': question[:100] + '...' if len(question) > 100 else question,
-                    'function_identified': function_result,
+                    'function_identified': function_name,
+                    'execution_result': str(execution_result)[:200] if execution_result else None,
+                    'execution_success': execution_success,
                     'llm_available': self.ollama_available,
                     'timestamp': datetime.now().isoformat()
                 }, broadcast=True)
             except Exception as e:
                 pass  # Silently fail if websocket not available
-            
-            # Log the email content for review (without auto-execution or auto-reply)
-            logger.info(f"Email content analyzed: {question[:200]}...")
             
             return True
             
@@ -256,3 +291,28 @@ class EmailReceiver:
         """Stop email monitoring"""
         self.running = False
         logger.info("Email monitoring stopped")
+    
+    def log_execution(self, email_from, question, function_name, result, success=True, error=None):
+        """Log function execution for monitoring"""
+        try:
+            # Import the execution_logs from main module
+            from main import execution_logs
+            
+            log_entry = {
+                'timestamp': datetime.now().isoformat(),
+                'email_from': email_from,
+                'question': question,
+                'function_name': function_name,
+                'result': str(result)[:500] if result else None,
+                'success': success,
+                'error': str(error) if error else None
+            }
+            execution_logs.append(log_entry)
+            
+            # Keep only last 100 logs
+            if len(execution_logs) > 100:
+                execution_logs.pop(0)
+                
+        except Exception as e:
+            # Silently fail if logging fails
+            logger.debug(f"Failed to log execution: {e}")
