@@ -32,7 +32,8 @@ script_modules = [
     "scripts.user_functions", 
     "scripts.analytics_functions",
     "scripts.system_functions",
-    "scripts.finance_functions"
+    "scripts.finance_functions",
+    "scripts.chart_functions"
 ]
 
 for module_name in script_modules:

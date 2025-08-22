@@ -1,7 +1,10 @@
 import smtplib
 import logging
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from config.config import Config
 
 logger = logging.getLogger(__name__)
@@ -12,8 +15,8 @@ class EmailSender:
     def __init__(self):
         self.config = Config()
     
-    def send_response(self, to_email: str, original_subject: str, question: str, result: str) -> bool:
-        """Send email response with function execution result"""
+    def send_response(self, to_email: str, original_subject: str, question: str, result: str, attachment_path: str = None) -> bool:
+        """Send email response with function execution result and optional chart attachment"""
         try:
             # Create message
             msg = MIMEMultipart()
@@ -22,8 +25,26 @@ class EmailSender:
             msg['Subject'] = f"Re: {original_subject}"
             
             # Create response body
-            body = self._create_response_body(question, result)
+            body = self._create_response_body(question, result, attachment_path)
             msg.attach(MIMEText(body, 'plain'))
+            
+            # Add attachment if provided
+            if attachment_path and os.path.exists(attachment_path):
+                with open(attachment_path, "rb") as attachment:
+                    part = MIMEBase('application', 'octet-stream')
+                    part.set_payload(attachment.read())
+                
+                encoders.encode_base64(part)
+                
+                # Add header with filename
+                filename = os.path.basename(attachment_path)
+                part.add_header(
+                    'Content-Disposition',
+                    f'attachment; filename= {filename}',
+                )
+                
+                msg.attach(part)
+                logger.info(f"Added chart attachment: {filename}")
             
             # Send email if SMTP is configured
             if self.config.SMTP_USERNAME and self.config.SMTP_PASSWORD:
@@ -47,15 +68,20 @@ class EmailSender:
             logger.error(f"Error sending email response: {e}")
             return False
     
-    def _create_response_body(self, question: str, result: str) -> str:
+    def _create_response_body(self, question: str, result: str, attachment_path: str = None) -> str:
         """Create formatted response email body"""
+        attachment_note = ""
+        if attachment_path:
+            chart_name = os.path.basename(attachment_path)
+            attachment_note = f"\n📊 I've attached a chart ({chart_name}) that visualizes this data for you.\n"
+        
         return f"""Hello,
 
 Thank you for your question: "{question}"
 
 Here is the result:
 
-{result}
+{result}{attachment_note}
 
 ---
 This is an automated response from the Email-to-Function Execution System.

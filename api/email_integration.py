@@ -111,12 +111,19 @@ class EmailReceiver:
                     # Log execution for monitoring
                     self.log_execution(sender_email, question, function_name, execution_result, True)
                     
-                    # Send email reply with results
+                    # Check if this is a chart function and generate chart
+                    chart_path = None
+                    if function_name.endswith('_chart'):
+                        logger.info(f"📊 Generating chart for {function_name}")
+                        chart_path = execution_result  # Chart functions return the file path
+                    
+                    # Send email reply with results and optional chart attachment
                     reply_sent = self.email_sender.send_response(
                         sender_email, 
                         subject, 
                         question, 
-                        str(execution_result)
+                        str(execution_result) if not chart_path else f"Chart generated successfully! See attached visualization.",
+                        chart_path
                     )
                     
                     if reply_sent:
